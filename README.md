@@ -6,8 +6,9 @@ HyperGraphQL is a [GraphQL](http://graphql.org) interface for querying and servi
 ![](https://raw.githubusercontent.com/semantic-integration/hypergraphql/gh-pages/sources/front-diagram.png)
 ### Running:
 
-mvn clean install
-mvn exec:java
+```mvn clean install```
+
+```mvn exec:java```
 
 ### License note:
  This software has been sourced from the original [HyperGraphQL repository](https://github.com/semantic-integration/hypergraphql), released under Apache License 2.0. See [LICENSE.TXT](https://github.com/semantic-integration/hypergraphql/blob/master/LICENSE.TXT) for more infromation. 
