@@ -57,6 +57,9 @@ public class HGQLSchemaWiring {
         put("offset", new GraphQLArgument("offset", GraphQLInt));
         put("lang", new GraphQLArgument("lang", GraphQLString));
         put("uris", new GraphQLArgument("uris", new GraphQLNonNull(new GraphQLList(GraphQLID))));
+        put("values-uri", new GraphQLArgument("values", new GraphQLList(GraphQLID)));
+        put("values-str", new GraphQLArgument("values", new GraphQLList(GraphQLString)));
+        put("values-int", new GraphQLArgument("values", new GraphQLList(GraphQLInt)));
     }};
 
     private List<GraphQLArgument> getQueryArgs = new ArrayList<GraphQLArgument>() {{
@@ -236,6 +239,15 @@ public class HGQLSchemaWiring {
 
         if (field.getTargetName().equals("String")) {
                 args.add(defaultArguments.get("lang"));
+                args.add(defaultArguments.get("values-str"));
+        }
+
+        if (field.getTargetName().equals("Int")) {
+            args.add(defaultArguments.get("values-int"));
+        }
+
+        if (!SCALAR_TYPES.containsKey(field.getTargetName())) {
+            args.add(defaultArguments.get("values-uri"));
         }
 
         String description = field.getId() + " (source: "+ field.getService().getId() +").";

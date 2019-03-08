@@ -67,31 +67,14 @@ public class SPARQLEndpointExecution implements Callable<SPARQLExecutionResult> 
         String sparqlQuery = converter.getSelectQuery(query, inputSubset, rootType);
         logger.info(sparqlQuery);
 
-        //        CredentialsProvider credsProvider = new BasicCredentialsProvider();
-//        Credentials credentials =
-//                new UsernamePasswordCredentials(this.sparqlEndpointService.getUser(), this.sparqlEndpointService.getPassword());
-//        credsProvider.setCredentials(AuthScope.ANY, credentials);
-//        HttpClient httpclient = HttpClients.custom()
-//                .setDefaultCredentialsProvider(credsProvider)
-//                .build();
-//
-//        HttpOp.setDefaultHttpClient(httpclient);
-//
-//        ARQ.init();
-//        Query jenaQuery = QueryFactory.create(sparqlQuery);
-
         PreemptiveBasicAuthenticator authenticator = null;
         try {
             authenticator = new PreemptiveBasicAuthenticator(new ScopedAuthenticator(new URI(this.sparqlEndpointService.getUrl()), this.sparqlEndpointService.getUser(), this.sparqlEndpointService.getPassword().toCharArray()));
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
+        System.out.println(sparqlQuery);
         QueryExecution qe = QueryExecutionFactory.sparqlService(this.sparqlEndpointService.getUrl(), sparqlQuery, authenticator);
-
-//        QueryEngineHTTP qEngine = QueryExecutionFactory.createServiceRequest(this.sparqlEndpointService.getUrl(), jenaQuery);
-//        qEngine.setClient(httpclient);
-
-        //qEngine.setSelectContentType(ResultsFormat.FMT_RS_XML.getSymbol());
 
 
         ResultSet results = qe.execSelect();

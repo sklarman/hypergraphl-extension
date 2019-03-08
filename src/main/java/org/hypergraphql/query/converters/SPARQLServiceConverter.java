@@ -2,7 +2,10 @@ package org.hypergraphql.query.converters;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeCreator;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.hypergraphql.config.schema.QueryFieldConfig;
 
 import org.hypergraphql.datamodel.HGQLSchema;
@@ -101,6 +104,23 @@ public class SPARQLServiceConverter {
         return langPattern;
     }
 
+    private String valueFilterSTR(JsonNode field) {
+        final String PATTERN = "FILTER (str(%s) IN (%s)) . ";
+        String nodeVar = varSTR(field.get("nodeId").asText());
+        JsonNode args = field.get("args");
+        String csv = "";
+        if (args.has("values")) {
+            JsonNode values = args.get("values");
+            Iterator<JsonNode> iterator = values.elements();
+            while (iterator.hasNext()) {
+                if (!csv.equals("")) csv = csv + ", ";
+                csv = csv + "\"" + iterator.next().asText() + "\"";
+            }
+        }
+        String inPattern = (!csv.isEmpty()) ? String.format(PATTERN, nodeVar, csv) : "";
+        return inPattern;
+    }
+
     private String fieldPattern(String parentId, String nodeId, String predicateURI, String typeURI) {
         String predicateTriple = (parentId.equals("")) ? "" : tripleSTR(varSTR(parentId), uriSTR(predicateURI), varSTR(nodeId));
         String typeTriple = (typeURI.equals("")) ? "" : tripleSTR(varSTR(nodeId), RDF_TYPE_URI, uriSTR(typeURI));
@@ -141,9 +161,9 @@ public class SPARQLServiceConverter {
         String valueSTR = valuesSTR(nodeId, uris);
 
         JsonNode subfields = queryField.get("fields");
-        String subQuery = getSubQueries(subfields);
+        ObjectNode subQuery = getSubQueries(subfields);
 
-        String selectQuery = selectQuerySTR(valueSTR + selectTriple + subQuery, graphID);
+        String selectQuery = selectQuerySTR(valueSTR + selectTriple + subQuery.get("clause").asText(), graphID);
 
         return selectQuery;
     }
@@ -159,9 +179,9 @@ public class SPARQLServiceConverter {
         String rootSubquery = selectSubquerySTR(nodeId, selectTriple, limitOffsetSTR);
 
         JsonNode subfields = queryField.get("fields");
-        String whereClause = getSubQueries(subfields);
+        ObjectNode whereClause = getSubQueries(subfields);
 
-        String selectQuery = selectQuerySTR(rootSubquery + whereClause, graphID);
+        String selectQuery = selectQuerySTR(rootSubquery + whereClause.get("clause").asText(), graphID);
 
         return selectQuery;
     }
@@ -183,9 +203,9 @@ public class SPARQLServiceConverter {
 
             JsonNode field = queryFieldsIterator.next();
 
-            String subquery = getFieldSubquery(field);
+            ObjectNode subquery = getFieldSubquery(field);
 
-            whereClause += subquery;
+            whereClause += subquery.get("clause").asText();
         }
 
         String selectQuery = selectQuerySTR(valueSTR + whereClause, graphID);
@@ -195,11 +215,17 @@ public class SPARQLServiceConverter {
     }
 
 
-    private String getFieldSubquery(JsonNode fieldJson) {
+    private ObjectNode getFieldSubquery(JsonNode fieldJson) {
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode whereNode = mapper.createObjectNode();
+        whereNode.put("clause", "");
+        boolean optional = true;
+        whereNode.put("optional", optional);
 
         String fieldName = fieldJson.get("name").asText();
 
-        if (HGQLVocabulary.JSONLD.containsKey(fieldName)) return "";
+        if (HGQLVocabulary.JSONLD.containsKey(fieldName)) return whereNode;
 
         String fieldURI = schema.getFields().get(fieldName).getId();
         String targetName = fieldJson.get("targetName").asText();
@@ -207,6 +233,7 @@ public class SPARQLServiceConverter {
         String nodeId = fieldJson.get("nodeId").asText();
 
         String langFilter = langFilterSTR(fieldJson);
+        String valueFilter = valueFilterSTR(fieldJson);
 
         String typeURI = (schema.getTypes().containsKey(targetName)) ? schema.getTypes().get(targetName).getId() : "";
 
@@ -214,19 +241,28 @@ public class SPARQLServiceConverter {
 
         JsonNode subfields = fieldJson.get("fields");
 
-        String rest = getSubQueries(subfields);
+        ObjectNode restClauses = getSubQueries(subfields);
 
+        optional = valueFilter.isEmpty() && restClauses.get("optional").asBoolean();
 
+        String whereClause = (optional) ? optionalSTR(fieldPattern + langFilter + restClauses.get("clause").asText()) : fieldPattern + langFilter + valueFilter + restClauses.get("clause").asText();
 
-        String whereClause = optionalSTR(fieldPattern + langFilter + rest);
+        whereNode.put("clause", whereClause);
+        whereNode.put("optional", optional);
 
-        return whereClause;
+        return whereNode;
     }
 
 
-    private String getSubQueries(JsonNode subfields) {
+    private ObjectNode getSubQueries(JsonNode subfields) {
 
-        if (subfields.isNull()) return "";
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode whereNode = mapper.createObjectNode();
+        whereNode.put("clause", "");
+        boolean optional = true;
+        whereNode.put("optional", optional);
+
+        if (subfields.isNull()) return whereNode;
 
         Iterator<JsonNode> queryFieldsIterator = subfields.elements();
 
@@ -235,12 +271,15 @@ public class SPARQLServiceConverter {
         while (queryFieldsIterator.hasNext()) {
 
             JsonNode field = queryFieldsIterator.next();
-
-            whereClause += getFieldSubquery(field);
-
+            ObjectNode subqueryField = getFieldSubquery(field);
+            if (!subqueryField.get("optional").asBoolean()) optional = false;
+            whereClause += subqueryField.get("clause").asText();
         }
 
-        return whereClause;
+        whereNode.put("clause", whereClause);
+        whereNode.put("optional", optional);
+
+        return whereNode;
 
     }
 
