@@ -104,6 +104,14 @@ public class SPARQLServiceConverter {
         return langPattern;
     }
 
+    private String containsFilterSTR(JsonNode field) {
+        final String PATTERN = "FILTER (CONTAINS(str(%s), \"%s\")) . ";
+        String nodeVar = varSTR(field.get("nodeId").asText());
+        JsonNode args = field.get("args");
+        String containsPattern = (args.has("contains")) ? String.format(PATTERN, nodeVar, args.get("contains").asText()) : "";
+        return containsPattern;
+    }
+
     private String valueFilterSTR(JsonNode field) {
         final String PATTERN = "FILTER (str(%s) IN (%s)) . ";
         String nodeVar = varSTR(field.get("nodeId").asText());
@@ -233,6 +241,7 @@ public class SPARQLServiceConverter {
         String nodeId = fieldJson.get("nodeId").asText();
 
         String langFilter = langFilterSTR(fieldJson);
+        String containsFilter = containsFilterSTR(fieldJson);
         String valueFilter = valueFilterSTR(fieldJson);
 
         String typeURI = (schema.getTypes().containsKey(targetName)) ? schema.getTypes().get(targetName).getId() : "";
@@ -243,9 +252,9 @@ public class SPARQLServiceConverter {
 
         ObjectNode restClauses = getSubQueries(subfields);
 
-        optional = valueFilter.isEmpty() && restClauses.get("optional").asBoolean();
+        optional = valueFilter.isEmpty() &&  containsFilter.isEmpty() && restClauses.get("optional").asBoolean();
 
-        String whereClause = (optional) ? optionalSTR(fieldPattern + langFilter + restClauses.get("clause").asText()) : fieldPattern + langFilter + valueFilter + restClauses.get("clause").asText();
+        String whereClause = (optional) ? optionalSTR(fieldPattern + langFilter + restClauses.get("clause").asText()) : fieldPattern + langFilter + containsFilter + valueFilter + restClauses.get("clause").asText();
 
         whereNode.put("clause", whereClause);
         whereNode.put("optional", optional);

@@ -56,6 +56,7 @@ public class HGQLSchemaWiring {
         put("limit", new GraphQLArgument("limit", GraphQLInt));
         put("offset", new GraphQLArgument("offset", GraphQLInt));
         put("lang", new GraphQLArgument("lang", GraphQLString));
+        put("contains", new GraphQLArgument("contains", GraphQLString));
         put("uris", new GraphQLArgument("uris", new GraphQLNonNull(new GraphQLList(GraphQLID))));
         put("values-uri", new GraphQLArgument("values", new GraphQLList(GraphQLID)));
         put("values-str", new GraphQLArgument("values", new GraphQLList(GraphQLString)));
@@ -240,6 +241,7 @@ public class HGQLSchemaWiring {
         if (field.getTargetName().equals("String")) {
                 args.add(defaultArguments.get("lang"));
                 args.add(defaultArguments.get("values-str"));
+                args.add(defaultArguments.get("contains"));
         }
 
         if (field.getTargetName().equals("Int")) {
