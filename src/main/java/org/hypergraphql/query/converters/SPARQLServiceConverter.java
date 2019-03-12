@@ -105,7 +105,7 @@ public class SPARQLServiceConverter {
     }
 
     private String containsFilterSTR(JsonNode field) {
-        final String PATTERN = "FILTER (CONTAINS(str(%s), \"%s\")) . ";
+        final String PATTERN = "FILTER (CONTAINS(LCASE(str(%s)), LCASE(\"%s\"))) . ";
         String nodeVar = varSTR(field.get("nodeId").asText());
         JsonNode args = field.get("args");
         String containsPattern = (args.has("contains")) ? String.format(PATTERN, nodeVar, args.get("contains").asText()) : "";
