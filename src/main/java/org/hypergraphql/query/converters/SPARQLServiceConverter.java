@@ -34,8 +34,8 @@ public class SPARQLServiceConverter {
         return String.format(PATTERN, sparqlPattern);
     }
 
-    private String selectSubquerySTR(String id, String sparqlPattern, String limitOffset) {
-        final String PATTERN = "{ SELECT " + varSTR(id) + " WHERE { %s } %s } ";
+    private String selectSubquerySTR(String id, String sparqlPattern, String limitOffset, String graphID) {
+        final String PATTERN = "{ SELECT " + varSTR(id) + " WHERE { " + graphSTR(graphID, (" %s ")) + " } %s }";
         return String.format(PATTERN, sparqlPattern, limitOffset);
     }
 
@@ -70,6 +70,16 @@ public class SPARQLServiceConverter {
         }
         return limitSTR + offsetSTR;
     }
+
+    private String graphIdFromArg(JsonNode jsonQuery) {
+        JsonNode args = jsonQuery.get("args");
+        String graphid = null;
+        if (args!=null) {
+            if (args.has("graph")) graphid = args.get("graph").asText();
+        }
+        return graphid;
+    }
+
 
     private String limitSTR(int no) {
         final String PATTERN = "LIMIT %s ";
@@ -183,8 +193,9 @@ public class SPARQLServiceConverter {
         String graphID = ((SPARQLEndpointService) schema.getQueryFields().get(queryField.get("name").asText()).service()).getGraph();
         String nodeId = queryField.get("nodeId").asText();
         String limitOffsetSTR = limitOffsetSTR(queryField);
+        String graphFromArg = graphIdFromArg(queryField);
         String selectTriple = tripleSTR(varSTR(nodeId), RDF_TYPE_URI, uriSTR(targetURI));
-        String rootSubquery = selectSubquerySTR(nodeId, selectTriple, limitOffsetSTR);
+        String rootSubquery = selectSubquerySTR(nodeId, selectTriple, limitOffsetSTR, graphFromArg);
 
         JsonNode subfields = queryField.get("fields");
         ObjectNode whereClause = getSubQueries(subfields);

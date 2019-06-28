@@ -55,6 +55,7 @@ public class HGQLSchemaWiring {
     private Map<String, GraphQLArgument> defaultArguments = new HashMap<String, GraphQLArgument>() {{
         put("limit", new GraphQLArgument("limit", GraphQLInt));
         put("offset", new GraphQLArgument("offset", GraphQLInt));
+        put("graph", new GraphQLArgument("graph", GraphQLString));
         put("lang", new GraphQLArgument("lang", GraphQLString));
         put("contains", new GraphQLArgument("contains", GraphQLString));
         put("uris", new GraphQLArgument("uris", new GraphQLNonNull(new GraphQLList(GraphQLID))));
@@ -66,6 +67,7 @@ public class HGQLSchemaWiring {
     private List<GraphQLArgument> getQueryArgs = new ArrayList<GraphQLArgument>() {{
         add(defaultArguments.get("limit"));
         add(defaultArguments.get("offset"));
+        add(defaultArguments.get("graph"));
     }};
 
     private List<GraphQLArgument> getByIdQueryArgs = new ArrayList<GraphQLArgument>() {{
@@ -132,14 +134,14 @@ public class HGQLSchemaWiring {
                 .query(builtQueryType)
                 .build(builtTypes);
 
-}
+    }
 
 
 
     private GraphQLFieldDefinition getidField() {
         FetcherFactory fetcherFactory = new FetcherFactory(hgqlSchema);
 
-       return  newFieldDefinition()
+        return  newFieldDefinition()
                 .type(GraphQLID)
                 .name("_id")
                 .description("The URI of this resource.")
@@ -147,7 +149,7 @@ public class HGQLSchemaWiring {
     }
 
     private GraphQLFieldDefinition gettypeField() {
-    FetcherFactory fetcherFactory = new FetcherFactory(hgqlSchema);
+        FetcherFactory fetcherFactory = new FetcherFactory(hgqlSchema);
 
         return newFieldDefinition()
                 .type(GraphQLID)
@@ -216,13 +218,13 @@ public class HGQLSchemaWiring {
 
         Boolean isList = field.getIsList();
 
-            if (SCALAR_TYPES.containsKey(field.getTargetName())) {
-                if (isList) return getBuiltField(field,fetcherFactory.literalValuesFetcher());
-                else return getBuiltField(field,fetcherFactory.literalValueFetcher());
+        if (SCALAR_TYPES.containsKey(field.getTargetName())) {
+            if (isList) return getBuiltField(field,fetcherFactory.literalValuesFetcher());
+            else return getBuiltField(field,fetcherFactory.literalValueFetcher());
 
-            } else {
-                if (isList) return getBuiltField(field,fetcherFactory.objectsFetcher());
-                else return getBuiltField(field,fetcherFactory.objectFetcher());
+        } else {
+            if (isList) return getBuiltField(field,fetcherFactory.objectsFetcher());
+            else return getBuiltField(field,fetcherFactory.objectFetcher());
 
         }
 
@@ -239,9 +241,9 @@ public class HGQLSchemaWiring {
         List<GraphQLArgument> args = new ArrayList<>();
 
         if (field.getTargetName().equals("String")) {
-                args.add(defaultArguments.get("lang"));
-                args.add(defaultArguments.get("values-str"));
-                args.add(defaultArguments.get("contains"));
+            args.add(defaultArguments.get("lang"));
+            args.add(defaultArguments.get("values-str"));
+            args.add(defaultArguments.get("contains"));
         }
 
         if (field.getTargetName().equals("Int")) {
